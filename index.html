@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GHB HaaS – App Walkthrough</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fff8f0 0%, #f5f5f5 50%, #e8f4fd 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Sarabun', sans-serif;
+      padding: 24px 16px;
+    }
+
+    .wrap{display:flex;flex-direction:column;align-items:center;padding:20px 24px 24px;background:#fff;border-radius:24px;font-family:'Sarabun',sans-serif;box-shadow:0 8px 40px rgba(0,0,0,.10);}
+
+    .top-bar{display:flex;align-items:center;justify-content:space-between;width:300px;margin-bottom:10px;}
+    .scene-title{font-size:11px;color:#666;font-weight:600;letter-spacing:.3px;text-align:center;flex:1;}
+    .step-counter{font-size:11px;color:#FF8C00;font-weight:700;}
+
+    .dots{display:flex;gap:4px;justify-content:center;margin-bottom:10px;}
+    .dot{width:20px;height:3px;border-radius:2px;background:#ddd;transition:background .3s,width .3s;}
+    .dot.on{background:#FF8C00;width:28px;}
+
+    .phone{width:300px;height:600px;background:#fff;border-radius:36px;border:8px solid #1a1a1a;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+    .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:20px;background:#1a1a1a;border-radius:0 0 14px 14px;z-index:10;}
+
+    .viewport{width:100%;height:100%;overflow:hidden;position:relative;}
+    .screen{position:absolute;inset:0;background:#f4f4f4;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .45s cubic-bezier(.4,0,.2,1);will-change:transform;}
+    .screen.active{transform:translateX(0);}
+    .screen.exit{transform:translateX(-100%);}
+
+    .app-header{background:#fff;padding:24px 12px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid #f0f0f0;}
+    .avatar{width:30px;height:30px;border-radius:50%;background:#FF8C00;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;flex-shrink:0;}
+    .uname{font-size:11px;font-weight:800;color:#111;}
+    .plat{font-size:8px;color:#b8860b;background:#fff8e1;border-radius:10px;padding:1px 6px;border:.5px solid #f0c040;display:inline-block;}
+    .brand{font-size:12px;font-weight:900;color:#111;letter-spacing:.5px;}
+    .brand span{color:#FF8C00;}
+    .bell{position:relative;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+    .bdot{position:absolute;top:0;right:0;background:#e53935;color:#fff;font-size:7px;font-weight:800;width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .logout{font-size:9px;padding:2px 7px;border:.5px solid #ddd;border-radius:6px;background:#fff;color:#666;}
+
+    .scroll{flex:1;overflow:hidden;padding:10px 10px 56px;}
+
+    .orange-card{background:#FF8C00;border-radius:14px;padding:14px;color:#fff;margin-bottom:8px;}
+    .oc-label{font-size:8px;font-weight:800;letter-spacing:1.5px;opacity:.8;}
+    .oc-score{font-size:40px;font-weight:900;line-height:1;}
+    .oc-score span{font-size:16px;font-weight:400;opacity:.75;}
+    .oc-desc{font-size:10px;opacity:.85;margin:3px 0 8px;}
+    .oc-tags{display:flex;gap:5px;flex-wrap:wrap;}
+    .oc-tag{font-size:9px;padding:2px 7px;background:rgba(255,255,255,.25);border-radius:20px;}
+
+    .pkg{border:1.5px solid #FF8C00;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#fff;}
+    .pkg-ico{font-size:18px;}
+    .pkg-title{font-size:11px;font-weight:800;color:#111;}
+    .pkg-desc{font-size:9px;color:#999;}
+    .pkg-btn{background:#FF8C00;color:#fff;font-size:9px;padding:4px 9px;border-radius:20px;border:none;font-weight:800;white-space:nowrap;flex-shrink:0;}
+
+    .sec-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .sec-title{font-size:12px;font-weight:800;color:#111;}
+    .see-all{font-size:10px;color:#FF8C00;font-weight:700;}
+
+    .ci{background:#fff;border-radius:10px;border:.5px solid #eee;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+    .ci-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+    .ci-ico.w{background:#fff3e0;}
+    .ci-ico.g{background:#e8f5e9;}
+    .ci-name{font-size:11px;font-weight:700;color:#111;}
+    .ci-date{font-size:9px;color:#bbb;}
+    .ci-date .ov{color:#e65100;font-weight:700;}
+    .ci-status{margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+    .s-over{color:#e65100;background:#fff3e0;}
+    .s-due{color:#FF8C00;background:#fff8e1;}
+    .s-soon{color:#f57c00;background:#fff8e1;}
+    .s-ok{color:#388e3c;background:#e8f5e9;}
+
+    .bnav{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:.5px solid #eee;display:flex;padding:5px 0 8px;}
+    .ni{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:8px;color:#bbb;flex:1;}
+    .ni.on{color:#FF8C00;}
+
+    .nh{padding:22px 12px 8px;background:#fff;border-bottom:.5px solid #f0f0f0;flex-shrink:0;}
+    .nh-back{font-size:12px;color:#FF8C00;font-weight:700;}
+    .nh-title{font-size:14px;font-weight:800;color:#111;}
+    .nh-sub{font-size:9px;color:#bbb;}
+    .nh-read{font-size:10px;color:#FF8C00;font-weight:700;}
+
+    .ng{font-size:10px;color:#bbb;padding:6px 0 3px;font-weight:700;}
+    .nitem{background:#fff;border-radius:10px;border:.5px solid #eee;padding:9px 10px;margin-bottom:5px;position:relative;}
+    .ndot{position:absolute;top:10px;right:10px;width:7px;height:7px;background:#FF8C00;border-radius:50%;}
+    .ntitle{font-size:11px;font-weight:800;color:#111;margin-bottom:2px;}
+    .nbody{font-size:10px;color:#555;line-height:1.4;}
+    .ntime{font-size:9px;color:#ccc;margin-top:3px;}
+
+    .overall-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+    .j-title{font-size:16px;font-weight:900;color:#111;}
+    .j-pct{font-size:20px;font-weight:900;color:#FF8C00;}
+    .stat3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;}
+    .scard{background:#fff;border-radius:10px;border:.5px solid #eee;padding:8px 4px;text-align:center;}
+    .spct{font-size:15px;font-weight:900;}
+    .slbl{font-size:8px;color:#999;margin-top:1px;}
+    .house-box{background:#eef2ff;border-radius:12px;height:130px;overflow:hidden;margin-bottom:8px;position:relative;}
+
+    .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+    .svc{background:#fff;border-radius:12px;border:.5px solid #eee;padding:12px 10px;cursor:pointer;}
+    .svc.hl{border-color:#FF8C00;background:#fff8f0;}
+    .svc-ico{font-size:20px;margin-bottom:5px;}
+    .svc-name{font-size:11px;font-weight:800;color:#111;margin-bottom:2px;}
+    .svc-price{font-size:9px;color:#888;margin-bottom:5px;}
+    .svc-tag{display:inline-block;font-size:8px;padding:2px 7px;border-radius:20px;font-weight:700;}
+    .t-urg{background:#ffebee;color:#c62828;}
+    .t-appt{background:#fff8e1;color:#e65100;}
+    .t-ren{background:#f3e5f5;color:#6a1b9a;}
+    .plat-bar{background:#fff8f0;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:10px;color:#e65100;}
+
+    .bk-partner{border:1.5px solid #FF8C00;border-radius:10px;padding:10px;margin-bottom:8px;background:#fff;}
+    .bk-pname{font-size:12px;font-weight:800;color:#111;}
+    .bk-rating{font-size:10px;color:#888;}
+    .bk-ver{font-size:9px;color:#388e3c;font-weight:700;}
+    .bk-price{font-size:10px;color:#FF8C00;font-weight:700;}
+    .est-box{background:#fff8f0;border-radius:10px;padding:10px;margin-bottom:8px;}
+    .est-lbl{font-size:10px;color:#888;margin-bottom:2px;}
+    .est-price{font-size:20px;font-weight:900;color:#FF8C00;}
+    .est-note{font-size:9px;color:#bbb;}
+    .flbl{font-size:10px;color:#555;font-weight:700;margin-bottom:4px;}
+    .ftxt{width:100%;border:.5px solid #ddd;border-radius:8px;padding:7px;font-size:10px;color:#bbb;height:50px;resize:none;background:#fafafa;margin-bottom:8px;}
+    .fdate{border:.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;color:#111;background:#fff;margin-bottom:10px;}
+    .cbtn{width:100%;background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;}
+
+    .plan{border:.5px solid #ddd;border-radius:12px;padding:12px;margin-bottom:8px;background:#fff;}
+    .plan.feat{border:2px solid #1565c0;}
+    .pbadge{display:inline-block;font-size:9px;padding:2px 9px;border-radius:20px;font-weight:800;margin-bottom:5px;}
+    .pb-none{background:#eee;color:#777;}
+    .pb-rec{background:#e3f2fd;color:#1565c0;}
+    .plan-name{font-size:17px;font-weight:900;color:#111;margin-bottom:2px;}
+    .plan-price{font-size:24px;font-weight:900;color:#1565c0;}
+    .plan-price0{font-size:24px;font-weight:900;color:#111;}
+    .plan-price span,.plan-price0 span{font-size:12px;font-weight:400;color:#999;}
+    .pf{font-size:10px;color:#555;padding:2px 0;}
+    .pf.y::before{content:"✓  ";color:#388e3c;}
+    .pf.n{color:#bbb;}
+    .pf.n::before{content:"✗  ";color:#ccc;}
+    .scta{width:100%;background:#1565c0;color:#fff;border:none;border-radius:12px;padding:12px;font-size:12px;font-weight:800;margin-top:4px;}
+
+    .loan-card{background:#fff;border:.5px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px;}
+    .loan-lbl{font-size:10px;color:#888;margin-bottom:2px;}
+    .loan-val{font-size:26px;font-weight:900;color:#111;}
+    .loan-max{font-size:10px;color:#388e3c;font-weight:700;margin-bottom:6px;}
+    .lrange{width:100%;accent-color:#FF8C00;margin-bottom:2px;}
+    .rscale{display:flex;justify-content:space-between;font-size:8px;color:#bbb;}
+    .terms{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+    .term{border:.5px solid #ddd;border-radius:10px;padding:8px 10px;background:#fff;display:flex;align-items:center;gap:8px;}
+    .term.sel{border-color:#FF8C00;background:#fff8f0;}
+    .rdot{width:13px;height:13px;border-radius:50%;border:2px solid #ddd;flex-shrink:0;}
+    .rdot.on{border-color:#FF8C00;background:#FF8C00;}
+    .tt{font-size:11px;font-weight:800;color:#111;}
+    .ts{font-size:9px;color:#999;}
+    .install{background:#fff;border:.5px solid #eee;border-radius:12px;padding:12px;text-align:center;}
+    .ilbl{font-size:10px;color:#888;margin-bottom:3px;}
+    .ival{font-size:28px;font-weight:900;color:#FF8C00;}
+    .inote{font-size:9px;color:#bbb;margin-top:3px;}
+
+    .kb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;}
+    .kbc{border-radius:12px;overflow:hidden;border:.5px solid #eee;background:#fff;}
+    .kbimg{height:65px;display:flex;align-items:center;justify-content:center;font-size:28px;}
+    .kbr{background:#1a237e;}
+    .kbp{background:#4e342e;}
+    .kbe{background:#f57f17;}
+    .kba{background:#006064;}
+    .kbody{padding:7px 8px 9px;}
+    .kcat{font-size:8px;font-weight:800;padding:1px 6px;border-radius:8px;margin-bottom:3px;display:inline-block;}
+    .cr{background:#e8eaf6;color:#1a237e;}
+    .cp{background:#efebe9;color:#4e342e;}
+    .ce{background:#fff8e1;color:#f57f17;}
+    .ca{background:#e0f7fa;color:#006064;}
+    .ktitle{font-size:10px;font-weight:700;color:#111;line-height:1.3;}
+    .ksrc{font-size:8px;color:#ccc;margin-top:3px;}
+
+    .ctrl{display:flex;justify-content:space-between;align-items:center;width:300px;margin-top:14px;gap:8px;}
+    .pbtn{font-size:10px;font-weight:700;padding:8px 18px;border-radius:20px;border:1.5px solid #FF8C00;cursor:pointer;color:#FF8C00;background:#fff;transition:opacity .2s;}
+    .nbtn{font-size:10px;font-weight:700;padding:8px 18px;border-radius:20px;border:1.5px solid #FF8C00;cursor:pointer;background:#FF8C00;color:#fff;transition:opacity .2s;}
+    .pbtn:disabled,.nbtn:disabled{opacity:.3;cursor:default;}
+    .play-btn{font-size:9px;padding:6px 14px;border-radius:20px;border:1.5px solid #999;cursor:pointer;background:#fff;color:#555;font-weight:700;}
+    .play-btn:hover{background:#f5f5f5;}
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top-bar">
+    <div class="step-counter" id="step-lbl">1 / 8</div>
+    <div class="scene-title" id="scene-lbl">Home Health Score</div>
+    <button class="play-btn" id="play-btn" onclick="togglePlay()">▶ Auto</button>
+  </div>
+  <div class="dots" id="dots"></div>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="viewport" id="vp">
+
+      <!-- S0: Home -->
+      <div class="screen active" id="s0">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <div class="avatar">วว</div>
+            <div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div class="brand">GHB <span>HaaS</span></div>
+            <div class="bell">🔔<div class="bdot">3</div></div>
+            <div class="logout">ออกจากระบบ</div>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="orange-card">
+            <div class="oc-label">HOME HEALTH SCORE</div>
+            <div class="oc-score">82<span>/100</span></div>
+            <div class="oc-desc">บ้านของคุณต้องการดูแลบางส่วน</div>
+            <div class="oc-tags">
+              <span class="oc-tag">⚠ ตู้ไฟ</span>
+              <span class="oc-tag">⚠ ล้างแอร์</span>
+              <span class="oc-tag">✓ หลังคา</span>
+              <span class="oc-tag">✓ ถังบำบัด</span>
+            </div>
+          </div>
+          <div class="pkg"><div class="pkg-ico">🛡️</div><div><div class="pkg-title">แพ็คเกจดูแลบ้านรายปี</div><div class="pkg-desc">เริ่มต้น ฿2,990/ปี · ฉีดปลวก ล้างแอร์ ตรวจบ้านฟรี</div></div><button class="pkg-btn">ดูแพ็คเกจ</button></div>
+          <div class="sec-row"><div class="sec-title">เช็คลิสต์สุขภาพบ้าน</div><div class="see-all">ดูทั้งหมด</div></div>
+          <div class="ci"><div class="ci-ico w">⚡</div><div><div class="ci-name">ตู้ไฟและระบบสายดิน</div><div class="ci-date">10 พ.ค. 2567 · <span class="ov">เกินกำหนด 2 ปี</span></div></div><div class="ci-status s-over">เกินกำหนด</div></div>
+          <div class="ci"><div class="ci-ico w">💨</div><div><div class="ci-name">ล้างแอร์ (ฆ่าเชื้อโรค)</div><div class="ci-date">12 ก.พ. 2569</div></div><div class="ci-status s-due">ถึงกำหนด</div></div>
+          <div class="ci"><div class="ci-ico w">⚠️</div><div><div class="ci-name">ฉีดปลวกและแมลง</div><div class="ci-date">15 มี.ค. 2569</div></div><div class="ci-status s-soon">เร็วๆ นี้</div></div>
+          <div class="ci"><div class="ci-ico g">🏠</div><div><div class="ci-name">หลังคาและรางน้ำฝน</div><div class="ci-date">01 ม.ค. 2569</div></div><div class="ci-status s-ok">ปกติ</div></div>
+        </div>
+        <div class="bnav">
+          <div class="ni on">🏠<span>Home</span></div>
+          <div class="ni">⚙️<span>Service</span></div>
+          <div class="ni">📖<span>Journal</span></div>
+          <div class="ni">💰<span>Loan</span></div>
+        </div>
+      </div>
+
+      <!-- S1: Notifications -->
+      <div class="screen" id="s1">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:14px;color:#FF8C00;font-weight:700;">‹</div>
+            <div><div class="nh-title">การแจ้งเตือน</div><div class="nh-sub">3 รายการที่ยังไม่ได้อ่าน</div></div>
+          </div>
+          <div class="nh-read">อ่านทั้งหมด</div>
+        </div>
+        <div class="scroll">
+          <div class="ng">วันนี้</div>
+          <div class="nitem"><div class="ndot"></div>
+            <div style="display:flex;gap:7px;"><div class="ci-ico w" style="width:26px;height:26px;font-size:12px;flex-shrink:0;">⚡</div><div><div class="ntitle">⚠️ ตู้ไฟเกินกำหนดตรวจสอบ</div><div class="nbody">ตู้ไฟและระบบสายดินเกินกำหนดแล้ว <strong style="color:#e53935;">2 ปี</strong> กรุณานัดช่างโดยด่วนเพื่อความปลอดภัย</div><div class="ntime">🕐 วันนี้ 08:30 น.</div></div></div>
+          </div>
+          <div class="nitem"><div class="ndot"></div>
+            <div style="display:flex;gap:7px;"><div class="ci-ico w" style="width:26px;height:26px;font-size:12px;flex-shrink:0;">💨</div><div><div class="ntitle">ถึงเวลาล้างแอร์แล้ว!</div><div class="nbody">ครบกำหนดล้างเครื่องปรับอากาศ <strong style="color:#FF8C00;">12 ก.พ. 2569</strong> นัดช่างล้างแอร์ฟรี 2 เครื่อง ตามสิทธิ์ Platinum</div><div class="ntime">🕐 วันนี้ 09:00 น.</div></div></div>
+          </div>
+          <div class="ng">ผลิตภัณฑ์ธนาคาร</div>
+          <div class="nitem"><div class="ndot"></div>
+            <div style="display:flex;gap:7px;"><div class="ci-ico" style="width:26px;height:26px;font-size:12px;flex-shrink:0;background:#e3f2fd;">📧</div><div><div class="ntitle">🏦 สิทธิพิเศษ Retention 2569</div><div class="nbody">คุณมีสิทธิ์ปรับลดอัตราดอกเบี้ย <strong style="color:#1565c0;">MRR-1.00%</strong> ยื่นคำขอได้ถึง 31 ธ.ค. 2569</div><div class="ntime">🗓 เมื่อวาน 14:00 น.</div></div></div>
+          </div>
+          <div class="ng">ก่อนหน้านี้</div>
+          <div class="nitem">
+            <div style="display:flex;gap:7px;"><div class="ci-ico w" style="width:26px;height:26px;font-size:12px;flex-shrink:0;">⚠️</div><div><div class="ntitle">ใกล้ถึงเวลาฉีดปลวกครั้งที่ 2</div><div class="nbody">กำหนดฉีดกันปลวกครั้งที่ 2 ภายใน 15 มี.ค. 2569 เหลืออีก 54 วัน</div><div class="ntime">🗓 3 วันที่แล้ว</div></div></div>
+          </div>
+          <div class="nitem">
+            <div style="display:flex;gap:7px;"><div class="ci-ico g" style="width:26px;height:26px;font-size:12px;flex-shrink:0;">✅</div><div><div class="ntitle">✅ ชำระค่างวดสำเร็จ</div><div class="nbody">ชำระค่างวดสินเชื่อบ้านเดือน ม.ค. 2569 เรียบร้อยแล้ว ยอด ฿12,450</div><div class="ntime">🗓 1 ม.ค. 2569</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S2: Journal -->
+      <div class="screen" id="s2">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;"><div class="avatar">วว</div><div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="brand">GHB <span>HaaS</span></div><div class="bell">🔔<div class="bdot">3</div></div></div>
+        </div>
+        <div class="scroll">
+          <div class="overall-row"><div class="j-title">สมุดพกบ้าน</div><div><div style="font-size:9px;color:#999;text-align:right;">Overall</div><div class="j-pct">82%</div></div></div>
+          <div class="stat3">
+            <div class="scard"><div class="spct" style="color:#388e3c;">95%</div><div class="slbl">โครงสร้าง</div></div>
+            <div class="scard"><div class="spct" style="color:#e53935;">60%</div><div class="slbl">ระบบไฟ</div></div>
+            <div class="scard"><div class="spct" style="color:#FF8C00;">80%</div><div class="slbl">ประปา/ปลวก</div></div>
+          </div>
+          <div class="house-box">
+            <svg width="284" height="130" viewBox="0 0 284 130" xmlns="http://www.w3.org/2000/svg">
+              <rect x="32" y="68" width="220" height="58" rx="4" fill="#e0e7ff"/>
+              <polygon points="142,10 22,68 262,68" fill="#37474f"/>
+              <rect x="90" y="72" width="38" height="32" rx="3" fill="#b0bec5"/>
+              <rect x="156" y="72" width="38" height="32" rx="3" fill="#b0bec5"/>
+              <rect x="117" y="82" width="30" height="44" rx="3" fill="#FF8C00"/>
+              <rect x="42" y="90" width="32" height="24" rx="2" fill="#444"/>
+              <circle cx="230" cy="22" r="12" fill="#FDD835"/>
+              <text x="142" y="44" text-anchor="middle" font-size="9" fill="#fff" font-weight="800" font-family="Sarabun,sans-serif">หลังคา 95% ✓</text>
+              <text x="102" y="70" text-anchor="middle" font-size="8" fill="#e65100" font-weight="800" font-family="Sarabun,sans-serif">แอร์ ⚠</text>
+              <text x="175" y="70" text-anchor="middle" font-size="8" fill="#e65100" font-weight="800" font-family="Sarabun,sans-serif">แอร์ ⚠</text>
+              <text x="58" y="106" text-anchor="middle" font-size="8" fill="#fff" font-weight="800" font-family="Sarabun,sans-serif">⚡60%</text>
+              <text x="142" y="126" text-anchor="middle" font-size="8" fill="#555" font-weight="700" font-family="Sarabun,sans-serif">ฐานราก · ปลวก 80%</text>
+            </svg>
+          </div>
+          <div class="sec-title" style="margin-bottom:7px;">ประวัติการบำรุงรักษา 2569</div>
+          <div class="ci"><div class="ci-ico w">💨</div><div><div class="ci-name">ล้างเครื่องปรับอากาศ</div><div class="ci-date">12 ส.ค. 2568 · GHB Cool Air Partner</div></div><div class="ci-status s-ok">Done</div></div>
+          <div class="ci"><div class="ci-ico g">🏠</div><div><div class="ci-name">ตรวจสอบหลังคาและรางน้ำ</div><div class="ci-date">01 ม.ค. 2569 · GHB Inspector</div></div><div class="ci-status s-ok">Done</div></div>
+          <div class="ci"><div class="ci-ico w">⚠️</div><div><div class="ci-name">ฉีดกันปลวก ครั้งที่ 1/2</div><div class="ci-date">15 มี.ค. 2568 · GHB Pest Control</div></div><div class="ci-status s-ok">Done</div></div>
+        </div>
+        <div class="bnav">
+          <div class="ni">🏠<span>Home</span></div>
+          <div class="ni">⚙️<span>Service</span></div>
+          <div class="ni on">📖<span>Journal</span></div>
+          <div class="ni">💰<span>Loan</span></div>
+        </div>
+      </div>
+
+      <!-- S3: Service -->
+      <div class="screen" id="s3">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;"><div class="avatar">วว</div><div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="brand">GHB <span>HaaS</span></div><div class="bell">🔔<div class="bdot">3</div></div></div>
+        </div>
+        <div class="scroll">
+          <div class="sec-title" style="font-size:15px;margin-bottom:1px;">บริการช่าง</div>
+          <div style="font-size:10px;color:#999;margin-bottom:7px;">พาร์ทเนอร์ GHB · ทั่วกรุงเทพฯ</div>
+          <div class="plat-bar">⭐ <strong>Platinum:</strong> ส่วนลด 10% ค่าบริการช่าง</div>
+          <div class="svc-grid">
+            <div class="svc"><div class="svc-ico">⚡</div><div class="svc-name">งานไฟฟ้า</div><div class="svc-price">฿300–฿1,500</div><span class="svc-tag t-urg">ด่วน 2 ชม.</span></div>
+            <div class="svc"><div class="svc-ico">🔧</div><div class="svc-name">งานประปา</div><div class="svc-price">฿250–฿2,000</div><span class="svc-tag t-urg">ด่วน 2 ชม.</span></div>
+            <div class="svc"><div class="svc-ico">💨</div><div class="svc-name">ล้างแอร์</div><div class="svc-price">฿500–฿800/เครื่อง</div><span class="svc-tag t-appt">นัดหมาย</span></div>
+            <div class="svc hl"><div class="svc-ico">🐜</div><div class="svc-name">กำจัดปลวก</div><div class="svc-price">฿1,200–฿3,500</div><span class="svc-tag t-appt">นัดหมาย</span></div>
+            <div class="svc"><div class="svc-ico">🏠</div><div class="svc-name">หลังคา/รางน้ำ</div><div class="svc-price">฿800–฿5,000</div><span class="svc-tag t-appt">นัดหมาย</span></div>
+            <div class="svc"><div class="svc-ico">🎨</div><div class="svc-name">ทาสีบ้าน</div><div class="svc-price">฿2,000–฿15,000</div><span class="svc-tag t-ren">รีโนเวท</span></div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="ni">🏠<span>Home</span></div>
+          <div class="ni on">⚙️<span>Service</span></div>
+          <div class="ni">📖<span>Journal</span></div>
+          <div class="ni">💰<span>Loan</span></div>
+        </div>
+      </div>
+
+      <!-- S4: Booking -->
+      <div class="screen" id="s4">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:14px;color:#FF8C00;font-weight:700;">‹</div>
+            <div><div class="nh-title">กำจัดปลวกและแมลง</div><div class="nh-sub">กรอกรายละเอียดเพื่อนัดหมาย</div></div>
+          </div>
+        </div>
+        <div class="scroll">
+          <div style="font-size:11px;color:#555;font-weight:700;margin-bottom:6px;">เลือกช่าง/พาร์ทเนอร์</div>
+          <div class="bk-partner">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="avatar" style="background:#4caf50;font-size:12px;">G</div>
+                <div><div class="bk-pname">GHB Pest Control</div><div class="bk-rating">⭐ 4.8 (88 รีวิว) <span class="bk-ver">GHB Verified</span></div><div class="bk-price">฿1,200–฿3,500 · Platinum ลด 20%</div></div>
+              </div>
+              <div style="width:14px;height:14px;border-radius:50%;background:#FF8C00;"></div>
+            </div>
+          </div>
+          <div class="est-box"><div class="est-lbl">คาดการณ์ค่าใช้จ่าย</div><div class="est-price">฿1,200–฿3,500</div><div class="est-note">ราคาจริงขึ้นอยู่กับการตรวจหน้างาน · Platinum รับส่วนลด 20%</div></div>
+          <div class="flbl">รายละเอียดปัญหา</div>
+          <textarea class="ftxt" placeholder="อธิบายปัญหาที่พบ เช่น มีรอยปลวก พบมดขึ้นเยอะ..."></textarea>
+          <div class="flbl">วันที่ต้องการนัดหมาย</div>
+          <div class="fdate">28 / 04 / 2026</div>
+          <button class="cbtn">ยืนยันนัดหมายช่าง</button>
+        </div>
+      </div>
+
+      <!-- S5: Subscription -->
+      <div class="screen" id="s5">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;"><div class="avatar">วว</div><div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="brand">GHB <span>HaaS</span></div><div class="bell">🔔<div class="bdot">3</div></div></div>
+        </div>
+        <div class="scroll">
+          <div class="sec-title" style="font-size:15px;margin-bottom:1px;">แพ็คเกจดูแลบ้าน</div>
+          <div style="font-size:10px;color:#999;margin-bottom:10px;">เลือกแพ็คเกจที่เหมาะกับคุณ</div>
+          <div class="plan"><div class="pbadge pb-none">ไม่มีสมาชิก</div><div class="plan-name">Free</div><div class="plan-price0">฿0<span>/ปี</span></div><div style="margin-top:7px;"><div class="pf y">หาช่างผ่านพาร์ทเนอร์ GHB (จ่ายเอง)</div><div class="pf y">ดู Home Health Score เบื้องต้น</div><div class="pf n">ไม่รวมบริการฟรี</div></div></div>
+          <div class="plan feat"><div class="pbadge pb-rec">แนะนำ</div><div class="plan-name">Platinum</div><div class="plan-price">฿2,990<span>/ปี</span></div><div style="margin-top:7px;"><div class="pf y">ล้างแอร์ 2 เครื่อง/ปี (ฟรี)</div><div class="pf y">ฉีดปลวก 1 ครั้ง/ปี (ฟรี)</div><div class="pf y">ตรวจประเมินบ้าน 1 ครั้ง/ปี</div><div class="pf y">ส่วนลด 10% ค่าบริการช่าง</div></div></div>
+          <button class="scta">สมัครแพ็คเกจ Platinum · ฿2,990/ปี</button>
+        </div>
+      </div>
+
+      <!-- S6: Loan -->
+      <div class="screen" id="s6">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;"><div class="avatar">วว</div><div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="brand">GHB <span>HaaS</span></div><div class="bell">🔔<div class="bdot">3</div></div></div>
+        </div>
+        <div class="scroll">
+          <div class="sec-title" style="font-size:15px;margin-bottom:1px;">สินเชื่อซ่อมแซม</div>
+          <div style="font-size:9px;color:#999;margin-bottom:8px;">อัตราดอกเบี้ยตามผลิตภัณฑ์ ธอส. ณ ปัจจุบัน</div>
+          <div class="loan-card">
+            <div class="loan-lbl">วงเงินที่ต้องการ (บาท)</div>
+            <div class="loan-val" id="lv">฿150,000</div>
+            <div class="loan-max">วงเงินอนุมัติสูงสุด: ฿1,200,000</div>
+            <input type="range" class="lrange" min="100000" max="1200000" step="50000" value="150000" id="lslider">
+            <div class="rscale"><span>฿100K</span><span>฿600K</span><span>฿1.2M</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#111;margin-bottom:6px;">ระยะเวลากู้และดอกเบี้ย</div>
+          <div class="terms">
+            <div class="term sel" onclick="selTerm(this,2.5,3)"><div class="rdot on"></div><div><div class="tt">3 ปี · 2.50% ต่อปี</div><div class="ts">สำหรับ Platinum Member</div></div></div>
+            <div class="term" onclick="selTerm(this,3.0,5)"><div class="rdot"></div><div><div class="tt">5 ปี · 3.00% ต่อปี</div><div class="ts">อัตราพิเศษ ธอส. ปี 2569</div></div></div>
+            <div class="term" onclick="selTerm(this,3.5,10)"><div class="rdot"></div><div><div class="tt">10 ปี · 3.50% ต่อปี</div><div class="ts">อัตราทั่วไป ธอส.</div></div></div>
+          </div>
+          <div class="install"><div class="ilbl">ค่างวดโดยประมาณ / เดือน</div><div class="ival" id="iv">฿4,329</div><div class="inote">คำนวณตามวงเงินและอัตราดอกเบี้ยที่เลือก</div></div>
+        </div>
+        <div class="bnav">
+          <div class="ni">🏠<span>Home</span></div>
+          <div class="ni">⚙️<span>Service</span></div>
+          <div class="ni">📖<span>Journal</span></div>
+          <div class="ni on">💰<span>Loan</span></div>
+        </div>
+      </div>
+
+      <!-- S7: Knowledge -->
+      <div class="screen" id="s7">
+        <div class="app-header">
+          <div style="display:flex;align-items:center;gap:7px;"><div class="avatar">วว</div><div><div class="uname">คุณวรวุฒิ สุขสบาย</div><div class="plat">⭐ Platinum Member</div></div></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div class="brand">GHB <span>HaaS</span></div><div class="bell">🔔<div class="bdot">3</div></div></div>
+        </div>
+        <div class="scroll">
+          <div class="sec-row" style="margin-bottom:8px;"><div class="sec-title" style="font-size:14px;">📚 คลังความรู้บ้าน</div><div class="see-all">ดูทั้งหมด</div></div>
+          <div class="kb-grid">
+            <div class="kbc"><div class="kbimg kbr">🌧️</div><div class="kbody"><div class="kcat cr">หน้าฝน</div><div class="ktitle">หน้าฝนต้องดูแลบ้านอย่างไร? 10 จุดสำคัญ</div><div class="ksrc">ธนาคาร ธอส. · บทความ</div></div></div>
+            <div class="kbc"><div class="kbimg kbp">🐜</div><div class="kbody"><div class="kcat cp">กำจัดปลวก</div><div class="ktitle">สัญญาณปลวกบุกบ้าน รู้ก่อน ป้องกันได้</div><div class="ksrc">ธนาคาร ธอส. · บทความ</div></div></div>
+            <div class="kbc"><div class="kbimg kbe">⚡</div><div class="kbody"><div class="kcat ce">ความปลอดภัย</div><div class="ktitle">ตรวจระบบไฟฟ้าบ้าน ก่อนเกิดเหตุ</div><div class="ksrc">ธนาคาร ธอส. · บทความ</div></div></div>
+            <div class="kbc"><div class="kbimg kba">❄️</div><div class="kbody"><div class="kcat ca">ดูแลแอร์</div><div class="ktitle">ล้างแอร์เองได้ไหม? คู่มือฉบับครบจบ</div><div class="ksrc">ธนาคาร ธอส. · บทความ</div></div></div>
+          </div>
+          <div class="sec-row" style="margin-bottom:7px;"><div class="sec-title">เช็คลิสต์สุขภาพบ้าน</div><div class="see-all">ดูทั้งหมด</div></div>
+          <div class="ci"><div class="ci-ico w">⚡</div><div><div class="ci-name">ตู้ไฟและระบบสายดิน</div><div class="ci-date">10 พ.ค. 2567 · <span class="ov">เกินกำหนด 2 ปี</span></div></div><div class="ci-status s-over">เกินกำหนด</div></div>
+          <div class="ci"><div class="ci-ico g">🏠</div><div><div class="ci-name">หลังคาและรางน้ำฝน</div><div class="ci-date">01 ม.ค. 2569</div></div><div class="ci-status s-ok">ปกติ</div></div>
+          <div class="ci"><div class="ci-ico g">🔽</div><div><div class="ci-name">ระบบถังบำบัดน้ำเสีย</div><div class="ci-date">05 มิ.ย. 2568</div></div><div class="ci-status s-ok">ปกติ</div></div>
+        </div>
+        <div class="bnav">
+          <div class="ni on">🏠<span>Home</span></div>
+          <div class="ni">⚙️<span>Service</span></div>
+          <div class="ni">📖<span>Journal</span></div>
+          <div class="ni">💰<span>Loan</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <button class="pbtn" id="pb" onclick="go(-1)" disabled>← ก่อนหน้า</button>
+    <button class="nbtn" id="nb" onclick="go(1)">ถัดไป →</button>
+  </div>
+</div>
+
+<script>
+const labels=["Home Health Score","การแจ้งเตือน","สมุดพกบ้าน","บริการช่าง","นัดหมายช่าง","แพ็คเกจ Subscription","สินเชื่อซ่อมแซม","คลังความรู้บ้าน"];
+let cur=0,total=8,playing=false,timer=null;
+
+function buildDots(){
+  const d=document.getElementById('dots');d.innerHTML='';
+  for(let i=0;i<total;i++){const s=document.createElement('div');s.className='dot'+(i===cur?' on':'');d.appendChild(s);}
+}
+buildDots();
+
+function go(dir){
+  const prev=cur;
+  cur=Math.max(0,Math.min(total-1,cur+dir));
+  if(prev===cur)return;
+  const ps=document.getElementById('s'+prev);
+  const ns=document.getElementById('s'+cur);
+  if(dir>0){
+    ns.style.transform='translateX(100%)';
+    ns.style.display='flex';
+    ns.classList.add('active');
+    requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+      ps.classList.add('exit');
+      ns.style.transform='translateX(0)';
+    });});
+    setTimeout(()=>{ps.classList.remove('active','exit');ps.style.transform='translateX(100%)';},480);
+  } else {
+    ns.style.transform='translateX(-100%)';
+    ns.style.display='flex';
+    ns.classList.add('active');
+    requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+      ps.style.transform='translateX(100%)';
+      ns.style.transform='translateX(0)';
+    });});
+    setTimeout(()=>{ps.classList.remove('active');ps.style.transform='translateX(100%)';},480);
+  }
+  document.getElementById('step-lbl').textContent=(cur+1)+' / '+total;
+  document.getElementById('scene-lbl').textContent=labels[cur];
+  document.getElementById('pb').disabled=cur===0;
+  document.getElementById('nb').disabled=cur===total-1;
+  buildDots();
+  if(cur===total-1&&playing)stopPlay();
+}
+
+function togglePlay(){
+  if(playing)stopPlay();else startPlay();
+}
+function startPlay(){
+  playing=true;document.getElementById('play-btn').textContent='⏸ Pause';
+  timer=setInterval(()=>{if(cur<total-1)go(1);else stopPlay();},2800);
+}
+function stopPlay(){
+  playing=false;clearInterval(timer);document.getElementById('play-btn').textContent='▶ Auto';
+}
+
+let lrate=2.5,lyears=3;
+function selTerm(el,r,y){
+  document.querySelectorAll('.term').forEach(t=>{t.classList.remove('sel');t.querySelector('.rdot').classList.remove('on');});
+  el.classList.add('sel');el.querySelector('.rdot').classList.add('on');
+  lrate=r;lyears=y;calcPmt();
+}
+function calcPmt(){
+  const amt=parseInt(document.getElementById('lslider').value);
+  const r=lrate/100/12,n=lyears*12;
+  const p=r===0?amt/n:amt*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  document.getElementById('iv').textContent='฿'+Math.round(p).toLocaleString();
+}
+const sl=document.getElementById('lslider');
+if(sl){sl.addEventListener('input',function(){document.getElementById('lv').textContent='฿'+parseInt(this.value).toLocaleString();calcPmt();});}
+</script>
+
+</body>
+</html>
